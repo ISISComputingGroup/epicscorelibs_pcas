@@ -12,7 +12,6 @@ from setuptools_dso.compiler import new_compiler
 
 mydir = os.path.abspath(os.path.dirname(__file__))
 
-# I will use some of what I'm about to install
 sys.path.insert(0, os.path.join(mydir, "src", "python"))
 
 import epicscorelibs.path
@@ -21,19 +20,26 @@ from epicscorelibs.config import get_config_var
 os.add_dll_directory(epicscorelibs.path.lib_path)
 
 
-def build(lib_name, sources=None, depends=None, dsos=None):
+def build(lib_name, sources=None, depends=None, dsos=None, libraries=None):
     if not sources:
-        sources = glob(f"pcas/src/{lib_name}/**/*.c") + glob(f"pcas/src/{lib_name}/**/*.cc")
+        sources = (
+            glob(f"pcas/src/{lib_name}/**/*.c", recursive=True)
+            + glob(f"pcas/src/{lib_name}/**/*.cc", recursive=True)
+            + glob(f"pcas/src/{lib_name}/**/*.cpp", recursive=True)
+        )
 
         # Generated cc which is only actually used in includes (can't build by itself)
         sources = [
             s
             for s in sources
-            if not s.endswith("aitConvertGenerated.cc")
-            and not s.endswith("aitGen.c")
-            and not s.endswith("genApps.cc")
-            and not s.endswith("casOpaqueAddr.cc")
-            and "test" not in s
+            if not s.endswith("aitConvertGenerated.cc")  # For code generation only
+            and not s.endswith("aitGen.c")  # For code generation only
+            and not s.endswith("genApps.cc")  # For code generation only
+            and not s.endswith("casOpaqueAddr.cc")  # Not sure...
+            # and not s.endswith("ioBlocked.cc")  # Multithreaded impl doesn't compile?
+            and "test" not in s  # Tests
+            and "example" not in s  # Example code
+            and "vms" not in s  # VMS sources
         ]
 
     mod = DSO(
@@ -47,10 +53,11 @@ def build(lib_name, sources=None, depends=None, dsos=None):
             os.path.join(mydir, "pcas", "src", "pcas", "generic", "st"),
             os.path.join(mydir, "pcas", "src", "pcas", "generic", "mt"),
             os.path.join(mydir, "pcas", "src", "pcas", "io", "bsdSocket"),
+            os.path.join(mydir, "include"),
         ],
         library_dirs=[epicscorelibs.path.lib_path],
         dsos=dsos or [],
-        libraries=["Com", "ca"],
+        libraries=["Com", "ca"] + (libraries or []),
         extra_link_args=get_config_var("LDFLAGS"),
         lang_compile_args={
             "c": get_config_var("CFLAGS"),
@@ -155,10 +162,74 @@ def build_version_file():
             dest.write(new_line)
 
 
+def find_file(name, recursive=False):
+    f = glob(f"**/{name}", recursive=recursive)
+    if len(f) != 1:
+        raise ValueError(f"Can't find unique file {name}: options were {f}")
+    return f
+
+
 build_version_file()
 build_generated_files()
 gdd_mod = build("gdd", depends=["pcas/src/gdd/aitConvertGenerated.cc", "pcas/src/gdd/gddApps.h"])
-pcas_mod = build("pcas", depends=["pcas/src/pcas/build/casVersionNum.h"])
+pcas_mod = build(
+    "pcas",
+    depends=["pcas/src/pcas/build/casVersionNum.h"],
+    dsos=["epicscorelibs_pcas.lib.gdd"],
+    libraries=["ws2_32"]
+    if "windows" in epicscorelibs.config.get_config_var("EPICS_HOST_ARCH")
+    else [],
+    sources=find_file("caServer.cc", recursive=True)
+    + find_file("caServerI.cc", recursive=True)
+    + find_file("casCoreClient.cc", recursive=True)
+    + find_file("casDGClient.cc", recursive=True)
+    + find_file("casStrmClient.cc", recursive=True)
+    + find_file("casPV.cc", recursive=True)
+    + find_file("casPVI.cc", recursive=True)
+    + find_file("casChannel.cc", recursive=True)
+    + find_file("casChannelI.cc", recursive=True)
+    + find_file("casAsyncIOI.cc", recursive=True)
+    + find_file("casAsyncReadIO.cc", recursive=True)
+    + find_file("casAsyncReadIOI.cc", recursive=True)
+    + find_file("casAsyncWriteIO.cc", recursive=True)
+    + find_file(
+        "casAsyncWriteIOI.cpp", recursive=True
+    )  # Note: incorrect in makefile, .cpp on filesystem
+    + find_file("casAsyncPVExistIO.cc", recursive=True)
+    + find_file(
+        "casAsyncPVExistIOI.cpp", recursive=True
+    )  # Note: incorrect in makefile, .cpp on filesystem
+    + find_file("casAsyncPVAttachIO.cc", recursive=True)
+    + find_file(
+        "casAsyncPVAttachIOI.cpp", recursive=True
+    )  # Note: incorrect in makefile, .cpp on filesystem
+    + find_file("casEventSys.cc", recursive=True)
+    + find_file("casMonitor.cc", recursive=True)
+    + find_file("casMonEvent.cc", recursive=True)
+    + find_file("inBuf.cc", recursive=True)
+    + find_file("outBuf.cc", recursive=True)
+    + find_file("casCtx.cc", recursive=True)
+    + find_file("casEventMask.cc", recursive=True)
+    + find_file("st/ioBlocked.cc", recursive=True)  # Exclude mt impl
+    + find_file("pvExistReturn.cc", recursive=True)
+    + find_file("pvAttachReturn.cc", recursive=True)
+    + find_file("caNetAddr.cc", recursive=True)
+    + find_file("beaconTimer.cc", recursive=True)
+    + find_file("beaconAnomalyGovernor.cc", recursive=True)
+    + find_file("clientBufMemoryManager.cpp", recursive=True)
+    + find_file("chanIntfForPV.cc", recursive=True)
+    + find_file("channelDestroyEvent.cpp", recursive=True)
+    + find_file("casIntfOS.cc", recursive=True)
+    + find_file("casDGIntfOS.cc", recursive=True)
+    + find_file("casStreamOS.cc", recursive=True)
+    + find_file("caServerIO.cc", recursive=True)
+    + find_file("casIntfIO.cc", recursive=True)
+    + find_file("casDGIntfIO.cc", recursive=True)
+    + find_file("casStreamIO.cc", recursive=True)
+    + find_file(
+        "ipIgnoreEntry.cpp", recursive=True
+    ),  # Note: incorrect in makefile, .cpp on filesystem
+)
 
 setup(
     name="epicscorelibs_pcas",
