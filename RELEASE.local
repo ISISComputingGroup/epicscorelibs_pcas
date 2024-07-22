@@ -1,0 +1,2 @@
+EPICS_BASE=c:\Instrument\Apps\Python3\Lib\site-packages\epicscorelibs
+RULES = 
