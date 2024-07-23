@@ -250,6 +250,11 @@ setup(
         "Tracker": "https://github.com/IsisComputingGroup/epicscorelibs_pcas/issues",
     },
     python_requires=">=3",
+    setup_requires=[
+        "setuptools",
+        "setuptools_dso>=2.9a1",
+        "epicscorelibs",
+    ],
     install_requires=[
         "setuptools",
         "setuptools_dso>=2.9a1",
