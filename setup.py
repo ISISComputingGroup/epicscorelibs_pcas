@@ -251,9 +251,9 @@ setup(
     },
     python_requires=">=3",
     install_requires=[
-        "setuptools",  # needed at runtime for 'pkg_resources'
-        "setuptools_dso>=2.9a1",  # 'setuptools_dso.runtime' used in 'epicscorelibs.path'
-        "numpy",  # needed for epicscorelibs.ca.dbr
+        "setuptools",
+        "setuptools_dso>=2.9a1",
+        "epicscorelibs",
     ],
     packages=[
         "epicscorelibs_pcas",
