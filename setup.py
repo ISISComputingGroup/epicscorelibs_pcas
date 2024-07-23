@@ -213,8 +213,8 @@ gdd_mod = build(
     depends=["pcas/src/gdd/aitConvertGenerated.cc", "pcas/src/gdd/gddApps.h"],
     sources=gdd_sources,
 )
-pcas_mod = build(
-    "pcas",
+cas_mod = build(
+    "cas",
     depends=["pcas/src/pcas/build/casVersionNum.h"],
     dsos=["epicscorelibs_pcas.lib.gdd"],
     libraries=pcas_libraries,
@@ -262,7 +262,7 @@ setup(
     ],
     package_dir={"": os.path.join("python")},
     package_data={"": ["*.pxd", "*.dll", "*.h"]},
-    x_dsos=[gdd_mod, pcas_mod],
+    x_dsos=[gdd_mod, cas_mod],
     headers=glob("**/*.h", recursive=True),
     include_package_data=True,
     zip_safe=False,
