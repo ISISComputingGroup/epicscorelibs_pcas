@@ -1,3 +1,6 @@
 include pyproject.toml
 
-recursive-include pcas *.h *.h@ *.c *.cc *.cpp *.cpp *.dll
+recursive-include include *.h
+recursive-include pcas *.h
+recursive-include pcas *.dll
+recursive-include python *.py

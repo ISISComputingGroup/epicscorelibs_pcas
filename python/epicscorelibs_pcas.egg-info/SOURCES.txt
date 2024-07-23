@@ -2,6 +2,8 @@ MANIFEST.in
 pyproject.toml
 setup.cfg
 setup.py
+include/net_convert.h
+pcas/LICENSE
 pcas/.ci/exampleApp/src/dbSubExample.c
 pcas/.ci/exampleApp/src/devXxxSoft.c
 pcas/.ci/exampleApp/src/exampleHello.c
@@ -169,3 +171,5 @@ python/epicscorelibs_pcas.egg-info/dependency_links.txt
 python/epicscorelibs_pcas.egg-info/not-zip-safe
 python/epicscorelibs_pcas.egg-info/requires.txt
 python/epicscorelibs_pcas.egg-info/top_level.txt
+python/epicscorelibs_pcas/lib/__init__.py
+python/epicscorelibs_pcas/path/__init__.py
