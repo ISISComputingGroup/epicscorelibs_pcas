@@ -50,7 +50,6 @@ gdd_sources = [
         "gddErrorCodes.cc",
         "gddUtils.cc",
         "gddEnumStringTable.cc",
-        "dbMapper.cc",
     ]
 ]
 
@@ -186,7 +185,7 @@ class BuildGenerated(Command):
             output_dir=mydir,
             extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
         )
-        comp.link_executable(ait_objs, "pcas/src/gdd/aitGen")
+        comp.link_executable(ait_objs, os.path.join(mydir, "pcas", "src", "gdd", "aitGen"))
         
         # Call code-generation executable
         subprocess.check_call(
@@ -198,11 +197,11 @@ class BuildGenerated(Command):
         )
         
         comp.compile(
-            sources=genapps_sources + ["pcas/src/gdd/genApps.cc"],
+            sources=genapps_sources + [os.path.join(mydir, "pcas", "src", "gdd", "genApps.cc")],
             output_dir=mydir,
             extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
         )
-        comp.link_executable(genapps_objs, "pcas/src/gdd/genApps")
+        comp.link_executable(genapps_objs, os.path.join(mydir, "pcas", "src", "gdd", "genApps"))
         
         # Call code-generation executable
         env_with_core_libs = os.environ.copy()
@@ -219,15 +218,20 @@ class BuildGenerated(Command):
 
 gdd_mod = build(
     "gdd",
-    depends=["pcas/src/gdd/aitConvertGenerated.cc", "pcas/src/gdd/gddApps.h"],
-    sources=gdd_sources,
+    depends=[
+        os.path.join(mydir, "pcas", "src", "gdd", "aitConvertGenerated.cc"), 
+        os.path.join(mydir, "pcas", "src", "gdd", "gddApps.h"),
+    ],
+    sources=gdd_sources + [find_unique_file("dbMapper.cc")],
 )
 cas_mod = build(
     "cas",
-    depends=["pcas/src/pcas/build/casVersionNum.h"],
+    depends=[
+        os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h")
+    ],
     dsos=["epicscorelibs_pcas.lib.gdd"],
     libraries=pcas_libraries,
-    sources=pcas_sources,  # Note: incorrect in makefile, .cpp on filesystem
+    sources=pcas_sources,
 )
 
 build_dso.sub_commands.extend([
