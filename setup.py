@@ -9,8 +9,9 @@ from glob import glob
 
 import epicscorelibs.path
 from epicscorelibs.config import get_config_var
-from setuptools_dso import DSO, setup
+from setuptools_dso import DSO, setup, build_dso
 from setuptools_dso.compiler import new_compiler
+from setuptools import Command
 
 mydir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(mydir, "src", "python"))
@@ -132,82 +133,90 @@ def build(lib_name, *, sources, depends=None, dsos=None, libraries=None):
     )
 
     return mod
+    
+            
+class BuildGenerated(Command):
+    def initialize_options(self):
+        pass
+        
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        self.build_version_file()
+        self.build_generated_files()
+        
+    def build_version_file(self):
+        with open(os.path.join(mydir, "pcas", "configure", "CONFIG_PCAS_VERSION")) as f:
+            for line in f:
+                if line.startswith("EPICS_PCAS_MAJOR_VERSION"):
+                    major = line.split("=")[1].strip()
+                if line.startswith("EPICS_PCAS_MINOR_VERSION"):
+                    minor = line.split("=")[1].strip()
+                if line.startswith("EPICS_PCAS_MAINTENANCE_VERSION"):
+                    maint = line.split("=")[1].strip()
+                if line.startswith("EPICS_PCAS_DEVELOPMENT_FLAG"):
+                    dev = line.split("=")[1].strip()
+        
+        with open(
+            os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h@"), "r"
+        ) as source, open(
+            os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h"), "w"
+        ) as dest:
+            for line in source:
+                new_line = (
+                    line.replace("@EPICS_PCAS_MAJOR_VERSION@", major)
+                    .replace("@EPICS_PCAS_MINOR_VERSION@", minor)
+                    .replace("@EPICS_PCAS_MAINTENANCE_VERSION@", maint)
+                    .replace("@EPICS_PCAS_DEVELOPMENT_FLAG@", dev)
+                )
+                dest.write(new_line)
+                
+    def build_generated_files(self):
+        ait_objs = [f'{item.split(".")[0]}.obj' for item in ait_sources]
+        genapps_objs = [f'{item.split(".")[0]}.obj' for item in genapps_sources]
+        
+        comp = new_compiler()
+        comp.add_include_dir(os.path.join(mydir, "pcas", "src", "gdd"))
+        comp.add_include_dir(epicscorelibs.path.include_path)
+        comp.add_library_dir(epicscorelibs.path.lib_path)
+        comp.add_library("Com")
+        comp.compile(
+            sources=ait_sources,
+            output_dir=mydir,
+            extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
+        )
+        comp.link_executable(ait_objs, "pcas/src/gdd/aitGen")
+        
+        # Call code-generation executable
+        subprocess.check_call(
+            [
+                os.path.join(mydir, "pcas", "src", "gdd", "aitGen"),
+                os.path.join(mydir, "pcas", "src", "gdd", "aitConvertGenerated.cc"),
+            ],
+            cwd=os.path.join(mydir, "pcas", "src", "gdd"),
+        )
+        
+        comp.compile(
+            sources=genapps_sources + ["pcas/src/gdd/genApps.cc"],
+            output_dir=mydir,
+            extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
+        )
+        comp.link_executable(genapps_objs, "pcas/src/gdd/genApps")
+        
+        # Call code-generation executable
+        env_with_core_libs = os.environ.copy()
+        env_with_core_libs["PATH"] += os.pathsep + epicscorelibs.path.lib_path
+        subprocess.check_call(
+            [
+                os.path.join(mydir, "pcas", "src", "gdd", "genApps"),
+                os.path.join(mydir, "pcas", "src", "gdd", "gddApps.h"),
+            ],
+            cwd=os.path.join(mydir, "pcas", "src", "gdd"),
+            env=env_with_core_libs,
+        )
 
 
-def build_generated_files():
-    ait_objs = [f'{item.split(".")[0]}.obj' for item in ait_sources]
-    genapps_objs = [f'{item.split(".")[0]}.obj' for item in genapps_sources]
-
-    comp = new_compiler()
-    comp.add_include_dir(os.path.join(mydir, "pcas", "src", "gdd"))
-    comp.add_include_dir(epicscorelibs.path.include_path)
-    comp.add_library_dir(epicscorelibs.path.lib_path)
-    comp.add_library("Com")
-    comp.compile(
-        sources=ait_sources,
-        output_dir=mydir,
-        extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
-    )
-    comp.link_executable(ait_objs, "pcas/src/gdd/aitGen")
-
-    # Call code-generation executable
-    subprocess.check_call(
-        [
-            os.path.join(mydir, "pcas", "src", "gdd", "aitGen"),
-            os.path.join(mydir, "pcas", "src", "gdd", "aitConvertGenerated.cc"),
-        ],
-        cwd=os.path.join(mydir, "pcas", "src", "gdd"),
-    )
-
-    comp.compile(
-        sources=genapps_sources + ["pcas/src/gdd/genApps.cc"],
-        output_dir=mydir,
-        extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
-    )
-    comp.link_executable(genapps_objs, "pcas/src/gdd/genApps")
-
-    # Call code-generation executable
-    env_with_core_libs = os.environ.copy()
-    env_with_core_libs["PATH"] += os.pathsep + epicscorelibs.path.lib_path
-    subprocess.check_call(
-        [
-            os.path.join(mydir, "pcas", "src", "gdd", "genApps"),
-            os.path.join(mydir, "pcas", "src", "gdd", "gddApps.h"),
-        ],
-        cwd=os.path.join(mydir, "pcas", "src", "gdd"),
-        env=env_with_core_libs,
-    )
-
-
-def build_version_file():
-    with open(os.path.join(mydir, "pcas", "configure", "CONFIG_PCAS_VERSION")) as f:
-        for line in f:
-            if line.startswith("EPICS_PCAS_MAJOR_VERSION"):
-                major = line.split("=")[1].strip()
-            if line.startswith("EPICS_PCAS_MINOR_VERSION"):
-                minor = line.split("=")[1].strip()
-            if line.startswith("EPICS_PCAS_MAINTENANCE_VERSION"):
-                maint = line.split("=")[1].strip()
-            if line.startswith("EPICS_PCAS_DEVELOPMENT_FLAG"):
-                dev = line.split("=")[1].strip()
-
-    with open(
-        os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h@"), "r"
-    ) as source, open(
-        os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h"), "w"
-    ) as dest:
-        for line in source:
-            new_line = (
-                line.replace("@EPICS_PCAS_MAJOR_VERSION@", major)
-                .replace("@EPICS_PCAS_MINOR_VERSION@", minor)
-                .replace("@EPICS_PCAS_MAINTENANCE_VERSION@", maint)
-                .replace("@EPICS_PCAS_DEVELOPMENT_FLAG@", dev)
-            )
-            dest.write(new_line)
-
-
-build_version_file()
-build_generated_files()
 gdd_mod = build(
     "gdd",
     depends=["pcas/src/gdd/aitConvertGenerated.cc", "pcas/src/gdd/gddApps.h"],
@@ -220,6 +229,10 @@ cas_mod = build(
     libraries=pcas_libraries,
     sources=pcas_sources,  # Note: incorrect in makefile, .cpp on filesystem
 )
+
+build_dso.sub_commands.extend([
+    ('build_generated', lambda self:True),
+])
 
 setup(
     name="epicscorelibs_pcas",
@@ -265,6 +278,9 @@ setup(
         "epicscorelibs_pcas.lib",
         "epicscorelibs_pcas.path",
     ],
+    cmdclass = {
+        'build_generated': BuildGenerated,
+    },
     package_dir={"": os.path.join("python")},
     package_data={"": ["*.pxd", "*.dll", "*.h"]},
     x_dsos=[gdd_mod, cas_mod],
