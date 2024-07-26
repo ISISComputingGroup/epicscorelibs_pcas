@@ -1,5 +1,0 @@
-include pyproject.toml
-
-recursive-include python/epicscorelibs_pcas/include *.h
-recursive-include pcas *.dll
-recursive-include python *.py

@@ -13,6 +13,7 @@ from epicscorelibs.config import get_config_var
 from setuptools_dso import DSO, setup, build_dso
 from setuptools_dso.compiler import new_compiler
 from setuptools import Command, find_packages
+from setuptools.command.build_py import build_py
 
 mydir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(mydir, "src", "python"))
@@ -251,6 +252,9 @@ cas_mod = build(
 build_dso.sub_commands.extend([
     ('build_generated', lambda self:True),
     ('copy_headers', lambda self:True),
+    # We generate some headers dynamically so rerun build_py
+    # (which redoes copy_data_files) after we've generated them.
+    ('build_py_again', lambda self:True),
 ])
 
 setup(
@@ -291,9 +295,12 @@ setup(
     cmdclass = {
         'copy_headers': CopyHeaders,
         'build_generated': BuildGenerated,
+        'build_py_again': build_py,
     },
-    package_dir={"": os.path.join("python")},
-    package_data={"epicscorelibs_pcas.include": ["*.h"]},
+    package_dir={"": "python"},
+    package_data={
+        "epicscorelibs_pcas.include": ["*.h"]
+    },
     x_dsos=[gdd_mod, cas_mod],
     include_package_data=True,
     zip_safe=False,
