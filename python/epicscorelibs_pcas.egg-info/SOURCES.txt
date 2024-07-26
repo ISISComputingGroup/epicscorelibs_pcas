@@ -15,7 +15,6 @@ pcas/.ci/exampleApp/test/exampleTest.c
 pcas/.ci/exampleApp/test/rtemsTestHarness.c
 pcas/src/gdd/aitConvert.cc
 pcas/src/gdd/aitConvert.h
-pcas/src/gdd/aitConvertGenerated.cc
 pcas/src/gdd/aitGen.c
 pcas/src/gdd/aitHelpers.cc
 pcas/src/gdd/aitHelpers.h
@@ -171,5 +170,6 @@ python/epicscorelibs_pcas.egg-info/dependency_links.txt
 python/epicscorelibs_pcas.egg-info/not-zip-safe
 python/epicscorelibs_pcas.egg-info/requires.txt
 python/epicscorelibs_pcas.egg-info/top_level.txt
+python/epicscorelibs_pcas/include/__init__.py
 python/epicscorelibs_pcas/lib/__init__.py
 python/epicscorelibs_pcas/path/__init__.py

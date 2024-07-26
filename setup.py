@@ -5,13 +5,14 @@ from __future__ import print_function
 import os
 import subprocess
 import sys
+import shutil
 from glob import glob
 
 import epicscorelibs.path
 from epicscorelibs.config import get_config_var
 from setuptools_dso import DSO, setup, build_dso
 from setuptools_dso.compiler import new_compiler
-from setuptools import Command
+from setuptools import Command, find_packages
 
 mydir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(mydir, "src", "python"))
@@ -216,6 +217,19 @@ class BuildGenerated(Command):
         )
 
 
+class CopyHeaders(Command):
+    def initialize_options(self):
+        pass
+        
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        for file in glob("**/*.h", recursive=True):
+            dst = os.path.join(mydir, "python", "epicscorelibs_pcas", "include", os.path.basename(file))
+            shutil.copy(file, dst)
+
+
 gdd_mod = build(
     "gdd",
     depends=[
@@ -227,7 +241,7 @@ gdd_mod = build(
 cas_mod = build(
     "cas",
     depends=[
-        os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h")
+        os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h"),
     ],
     dsos=["epicscorelibs_pcas.lib.gdd"],
     libraries=pcas_libraries,
@@ -236,6 +250,7 @@ cas_mod = build(
 
 build_dso.sub_commands.extend([
     ('build_generated', lambda self:True),
+    ('copy_headers', lambda self:True),
 ])
 
 setup(
@@ -267,28 +282,19 @@ setup(
         "Tracker": "https://github.com/IsisComputingGroup/epicscorelibs_pcas/issues",
     },
     python_requires=">=3",
-    setup_requires=[
-        "setuptools",
-        "setuptools_dso>=2.9a1",
-        "epicscorelibs",
-    ],
     install_requires=[
         "setuptools",
         "setuptools_dso>=2.9a1",
         "epicscorelibs",
     ],
-    packages=[
-        "epicscorelibs_pcas",
-        "epicscorelibs_pcas.lib",
-        "epicscorelibs_pcas.path",
-    ],
+    packages=["epicscorelibs_pcas", "epicscorelibs_pcas.lib", "epicscorelibs_pcas.path", "epicscorelibs_pcas.include"],
     cmdclass = {
+        'copy_headers': CopyHeaders,
         'build_generated': BuildGenerated,
     },
     package_dir={"": os.path.join("python")},
-    package_data={"": ["*.pxd", "*.dll", "*.h"]},
+    package_data={"epicscorelibs_pcas.include": ["*.h"]},
     x_dsos=[gdd_mod, cas_mod],
-    headers=glob("**/*.h", recursive=True),
     include_package_data=True,
     zip_safe=False,
 )

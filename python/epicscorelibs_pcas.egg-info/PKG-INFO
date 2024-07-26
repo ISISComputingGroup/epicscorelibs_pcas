@@ -1,5 +1,5 @@
 Metadata-Version: 2.1
-Name: epicscorelibs_pcas
+Name: epicscorelibs-pcas
 Version: 0.0.1a0
 Summary: The EPICS PCAS binary libraries for use by python modules
 Home-page: https://github.com/IsisComputingGroup/epicscorelibs_pcas
@@ -22,8 +22,5 @@ Classifier: Operating System :: MacOS
 Classifier: Operating System :: Microsoft :: Windows
 Requires-Python: >=3
 License-File: pcas/LICENSE
-Requires-Dist: setuptools
-Requires-Dist: setuptools_dso>=2.9a1
-Requires-Dist: numpy
 
 The EPICS (Experimental Physics and Industrial Control System) PCAS libraries built against epicscorelibs.

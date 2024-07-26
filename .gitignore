@@ -1,0 +1,7 @@
+build
+Instrument
+python/**/*.h
+.idea
+.ruff_cache
+*.py[cod]
+python/epicscorelibs_pcas.egg-info
