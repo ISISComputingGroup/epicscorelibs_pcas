@@ -134,19 +134,19 @@ def build(lib_name, *, sources, depends=None, dsos=None, libraries=None):
     )
 
     return mod
-    
-            
+
+
 class BuildGenerated(Command):
     def initialize_options(self):
         pass
-        
+
     def finalize_options(self):
         pass
 
     def run(self):
         self.build_version_file()
         self.build_generated_files()
-        
+
     def build_version_file(self):
         with open(os.path.join(mydir, "pcas", "configure", "CONFIG_PCAS_VERSION")) as f:
             for line in f:
@@ -158,7 +158,7 @@ class BuildGenerated(Command):
                     maint = line.split("=")[1].strip()
                 if line.startswith("EPICS_PCAS_DEVELOPMENT_FLAG"):
                     dev = line.split("=")[1].strip()
-        
+
         with open(
             os.path.join(mydir, "pcas", "src", "pcas", "build", "casVersionNum.h@"), "r"
         ) as source, open(
@@ -172,11 +172,11 @@ class BuildGenerated(Command):
                     .replace("@EPICS_PCAS_DEVELOPMENT_FLAG@", dev)
                 )
                 dest.write(new_line)
-                
+
     def build_generated_files(self):
         ait_objs = [f'{item.split(".")[0]}.obj' for item in ait_sources]
         genapps_objs = [f'{item.split(".")[0]}.obj' for item in genapps_sources]
-        
+
         comp = new_compiler()
         comp.add_include_dir(os.path.join(mydir, "pcas", "src", "gdd"))
         comp.add_include_dir(epicscorelibs.path.include_path)
@@ -188,7 +188,7 @@ class BuildGenerated(Command):
             extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
         )
         comp.link_executable(ait_objs, os.path.join(mydir, "pcas", "src", "gdd", "aitGen"))
-        
+
         # Call code-generation executable
         subprocess.check_call(
             [
@@ -197,14 +197,14 @@ class BuildGenerated(Command):
             ],
             cwd=os.path.join(mydir, "pcas", "src", "gdd"),
         )
-        
+
         comp.compile(
             sources=genapps_sources + [os.path.join(mydir, "pcas", "src", "gdd", "genApps.cc")],
             output_dir=mydir,
             extra_preargs=epicscorelibs.config.get_config_var("CXXFLAGS"),
         )
         comp.link_executable(genapps_objs, os.path.join(mydir, "pcas", "src", "gdd", "genApps"))
-        
+
         # Call code-generation executable
         env_with_core_libs = os.environ.copy()
         env_with_core_libs["PATH"] += os.pathsep + epicscorelibs.path.lib_path
@@ -221,20 +221,22 @@ class BuildGenerated(Command):
 class CopyHeaders(Command):
     def initialize_options(self):
         pass
-        
+
     def finalize_options(self):
         pass
 
     def run(self):
         for file in glob("**/*.h", recursive=True):
-            dst = os.path.join(mydir, "python", "epicscorelibs_pcas", "include", os.path.basename(file))
+            dst = os.path.join(
+                mydir, "python", "epicscorelibs_pcas", "include", os.path.basename(file)
+            )
             shutil.copy(file, dst)
 
 
 gdd_mod = build(
     "gdd",
     depends=[
-        os.path.join(mydir, "pcas", "src", "gdd", "aitConvertGenerated.cc"), 
+        os.path.join(mydir, "pcas", "src", "gdd", "aitConvertGenerated.cc"),
         os.path.join(mydir, "pcas", "src", "gdd", "gddApps.h"),
     ],
     sources=gdd_sources + [find_unique_file("dbMapper.cc")],
@@ -249,13 +251,15 @@ cas_mod = build(
     sources=pcas_sources,
 )
 
-build_dso.sub_commands.extend([
-    ('build_generated', lambda self:True),
-    ('copy_headers', lambda self:True),
-    # We generate some headers dynamically so rerun build_py
-    # (which redoes copy_data_files) after we've generated them.
-    ('build_py_again', lambda self:True),
-])
+build_dso.sub_commands.extend(
+    [
+        ("build_generated", lambda self: True),
+        ("copy_headers", lambda self: True),
+        # We generate some headers dynamically so rerun build_py
+        # (which redoes copy_data_files) after we've generated them.
+        ("build_py_again", lambda self: True),
+    ]
+)
 
 setup(
     name="epicscorelibs_pcas",
@@ -291,16 +295,19 @@ setup(
         "setuptools_dso>=2.9a1",
         "epicscorelibs",
     ],
-    packages=["epicscorelibs_pcas", "epicscorelibs_pcas.lib", "epicscorelibs_pcas.path", "epicscorelibs_pcas.include"],
-    cmdclass = {
-        'copy_headers': CopyHeaders,
-        'build_generated': BuildGenerated,
-        'build_py_again': build_py,
+    packages=[
+        "epicscorelibs_pcas",
+        "epicscorelibs_pcas.lib",
+        "epicscorelibs_pcas.path",
+        "epicscorelibs_pcas.include",
+    ],
+    cmdclass={
+        "copy_headers": CopyHeaders,
+        "build_generated": BuildGenerated,
+        "build_py_again": build_py,
     },
     package_dir={"": "python"},
-    package_data={
-        "epicscorelibs_pcas.include": ["*.h"]
-    },
+    package_data={"epicscorelibs_pcas.include": ["*.h"]},
     x_dsos=[gdd_mod, cas_mod],
     include_package_data=True,
     zip_safe=False,
