@@ -3,17 +3,17 @@
 from __future__ import print_function
 
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 from glob import glob
 
 import epicscorelibs.path
 from epicscorelibs.config import get_config_var
-from setuptools_dso import DSO, setup, build_dso
-from setuptools_dso.compiler import new_compiler
-from setuptools import Command, find_packages
+from setuptools import Command
 from setuptools.command.build_py import build_py
+from setuptools_dso import DSO, build_dso, setup
+from setuptools_dso.compiler import new_compiler
 
 mydir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(mydir, "src", "python"))
