@@ -9,6 +9,7 @@ import sys
 from glob import glob
 
 import epicscorelibs.path
+import epicscorelibs.version
 from epicscorelibs.config import get_config_var
 from setuptools import Command
 from setuptools.command.build_py import build_py
@@ -226,10 +227,14 @@ class CopyHeaders(Command):
         pass
 
     def run(self):
-        for file in glob("**/*.h", recursive=True):
+        for file in glob("pcas/**/*.h", recursive=True):
             dst = os.path.join(
                 mydir, "python", "epicscorelibs_pcas", "include", os.path.basename(file)
             )
+            try:
+                os.remove(dst)
+            except OSError:
+                pass
             shutil.copy(file, dst)
 
 
@@ -263,7 +268,7 @@ build_dso.sub_commands.extend(
 
 setup(
     name="epicscorelibs_pcas",
-    version="0.0.1a0",
+    version="0.0.2",
     description="The EPICS PCAS binary libraries for use by python modules",
     long_description="""The EPICS (Experimental Physics and Industrial Control System) PCAS libraries built against epicscorelibs.
 """,
@@ -273,7 +278,6 @@ setup(
     license="EPICS",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "License :: Freely Distributable",
         "Intended Audience :: Science/Research",
@@ -291,9 +295,8 @@ setup(
     },
     python_requires=">=3",
     install_requires=[
-        "setuptools",
-        "setuptools_dso>=2.9a1",
-        "epicscorelibs",
+        "setuptools_dso>=2.11",
+        epicscorelibs.version.abi_requires(),
     ],
     packages=[
         "epicscorelibs_pcas",
