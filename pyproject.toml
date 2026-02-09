@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools",
+    "setuptools<81",
     "wheel",
     "setuptools-dso>=2.11",
     "epicscorelibs"
