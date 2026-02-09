@@ -5,3 +5,4 @@ jobs:
     uses: ISISComputingGroup/reusable-workflows/.github/workflows/linters.yml@main
     with:
       compare-branch: origin/main
+      runs-on: windows-latest
