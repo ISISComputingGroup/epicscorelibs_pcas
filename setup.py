@@ -295,7 +295,7 @@ setup(
     },
     python_requires=">=3",
     install_requires=[
-        "setuptools_dso>=2.11",
+        "setuptools_dso>=2.12.4",
         epicscorelibs.version.abi_requires(),
     ],
     packages=[
